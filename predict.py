@@ -3,7 +3,6 @@ import os
 import cv2
 import numpy as np
 import c3d_model
-import sys
 import matplotlib.pyplot as plt
 
 
@@ -135,7 +134,7 @@ def main():
     print('Total labels: {}'.format(len(labels)))
 
     print("[Info] Loading a sample video...")
-    cap = cv2.VideoCapture('./videos/orig.mp4')
+    cap = cv2.VideoCapture('./videos/tennis.mp4')
     if not cap:
         print("No video loaded")
         exit()
@@ -152,8 +151,8 @@ def main():
     # plt.show()
 
     # sample 16-frame clip
-    # start_frame = 100
-    start_frame = 2000
+    start_frame = 100
+    # start_frame = 2000
     X = vid[start_frame:(start_frame + 16), :, :, :]
     # diagnose(X, verbose=True, label='X (16-frame clip)', plots=show_images)
 
@@ -193,10 +192,10 @@ def main():
     output = model.predict_on_batch(np.array([X]))
 
     # show results
-    print('Saving class probabilitities in probabilities.png')
-    plt.plot(output[0])
-    plt.title('Probability')
-    plt.savefig("probabilities.png")
+    # print('Saving class probabilitities in probabilities.png')
+    # plt.plot(output[0])
+    # plt.title('Probability')
+    # plt.savefig("probabilities.png")
     print('Position of maximum probability: {}'.format(output[0].argmax()))
     print('Maximum probability: {:.5f}'.format(max(output[0])))
     print('Corresponding label: {}'.format(labels[output[0].argmax()]))
