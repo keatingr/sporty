@@ -108,27 +108,14 @@ def main():
     diagnose_plots = False
     model_dir = './models'
     backend = 'tf'
-    # override backend if provided as an input arg
-
-    print("[Info] Using backend={}".format(backend))
 
     model_weight_filename = os.path.join(model_dir, 'sports1M_weights_tf.h5')
     model_json_filename = os.path.join(model_dir, 'sports1M_weights_tf.json')
-
-    print("[Info] Reading model architecture...")
     model = model_from_json(open(model_json_filename, 'r').read())
 
-    model_img_filename = os.path.join(model_dir, 'c3d_model.png')
-    if not os.path.exists(model_img_filename):
-        from keras.utils import plot_model
-        plot_model(model, to_file=model_img_filename)
-
-    print("[Info] Loading model weights...")
     model.load_weights(model_weight_filename)
-    print("[Info] Loading model weights -- DONE!")
     model.compile(loss='mean_squared_error', optimizer='sgd')
 
-    print("[Info] Loading labels...")
     with open('models/labels.txt', 'r') as f:
         labels = [line.strip() for line in f.readlines()]
     print('Total labels: {}'.format(len(labels)))
@@ -150,9 +137,7 @@ def main():
     # plt.imshow(vid[2000]/256)
     # plt.show()
 
-    # sample 16-frame clip
     start_frame = 100
-    # start_frame = 2000
     X = vid[start_frame:(start_frame + 16), :, :, :]
     # diagnose(X, verbose=True, label='X (16-frame clip)', plots=show_images)
 
@@ -167,10 +152,10 @@ def main():
     X = X[:, 8:120, 30:142, :]  # (l, h, w, c)
     # diagnose(X, verbose=True, label='Center-cropped X', plots=show_images)
 
-    if backend == 'th':
-        X = np.transpose(X, (3, 0, 1, 2))  # input_shape = (3,16,112,112)
-    else:
-        pass  # input_shape = (16,112,112,3)
+    # if backend == 'th':
+    #     X = np.transpose(X, (3, 0, 1, 2))  # input_shape = (3,16,112,112)
+    # else:
+    #     pass  # input_shape = (16,112,112,3)
 
     # get activations for intermediate layers if needed
     inspect_layers = [
@@ -188,7 +173,6 @@ def main():
                  plots=diagnose_plots,
                  backend=backend)
 
-    # inference
     output = model.predict_on_batch(np.array([X]))
 
     # show results
@@ -200,7 +184,6 @@ def main():
     print('Maximum probability: {:.5f}'.format(max(output[0])))
     print('Corresponding label: {}'.format(labels[output[0].argmax()]))
 
-    # sort top five predictions from softmax output
     top_inds = output[0].argsort()[::-1][:5]  # reverse sort and take five largest items
     print('\nTop 5 probabilities and labels:')
     for i in top_inds:
