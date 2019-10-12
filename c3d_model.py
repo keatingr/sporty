@@ -30,7 +30,8 @@ def build_model():
     return model
 
 
-def get_int_model(model, layer, backend='tf'):
+def get_int_model(model, layer):
+    backend = 'tf'
     if backend == 'tf':
         input_shape = (16, 112, 112, 3)  # l, h, w, c
     else:

@@ -1,13 +1,15 @@
-from keras.models import model_from_json
+from keras.models import load_model
 import os
 import cv2
 import numpy as np
 import c3d_model
 import matplotlib.pyplot as plt
+import tensorflow as tf
 
 
-def diagnose(data, verbose=True, label='input', plots=False, backend='tf'):
+def diagnose(data, verbose=True, label='input', plots=False):
     # Convolution3D?
+    backend='tf'
     if data.ndim > 2:
         if backend == 'th':
             data = np.transpose(data, (1, 2, 3, 0))
@@ -22,12 +24,12 @@ def diagnose(data, verbose=True, label='input', plots=False, backend='tf'):
             num_this_dim = data.shape[d]
             if num_this_dim >= min_num_spatial_axes:  # check for spatial axes
                 # just first, center, last indices
-                range_this_dim = [0, num_this_dim / 2, num_this_dim - 1]
+                range_this_dim = [0, num_this_dim // 2, num_this_dim - 1]
             else:
                 # sweep all indices for non-spatial axes
                 range_this_dim = range(num_this_dim)
             for i in range_this_dim:
-                new_dim = tuple([d] + range(d) + range(d + 1, ndim))
+                new_dim = tuple([d] + list(range(d)) + list(range(d + 1, ndim)))
                 sliced = np.transpose(data, new_dim)[i, ...]
                 print("[Info] {}, dim:{} {}-th slice: "
                       "(min, max, mean, std)=({}, {}, {}, {})".format(
@@ -106,22 +108,18 @@ def diagnose(data, verbose=True, label='input', plots=False, backend='tf'):
 def main():
     show_images = True
     diagnose_plots = False
-    model_dir = './models'
-    backend = 'tf'
 
-    model_weight_filename = os.path.join(model_dir, 'sports1M_weights_tf.h5')
-    model_json_filename = os.path.join(model_dir, 'sports1M_weights_tf.json')
-    model = model_from_json(open(model_json_filename, 'r').read())
-
-    model.load_weights(model_weight_filename)
+    model = load_model('./models/sports1m-full.h5')
     model.compile(loss='mean_squared_error', optimizer='sgd')
 
-    with open('models/labels.txt', 'r') as f:
+    with open('labels.txt', 'r') as f:
         labels = [line.strip() for line in f.readlines()]
     print('Total labels: {}'.format(len(labels)))
 
-    print("[Info] Loading a sample video...")
-    cap = cv2.VideoCapture('./videos/tennis.mp4')
+    try:
+        cap = cv2.VideoCapture('./videos/tennis.mp4')
+    except:
+        print("unable to load video")
     if not cap:
         print("No video loaded")
         exit()
@@ -152,26 +150,19 @@ def main():
     X = X[:, 8:120, 30:142, :]  # (l, h, w, c)
     # diagnose(X, verbose=True, label='Center-cropped X', plots=show_images)
 
-    # if backend == 'th':
-    #     X = np.transpose(X, (3, 0, 1, 2))  # input_shape = (3,16,112,112)
-    # else:
-    #     pass  # input_shape = (16,112,112,3)
-
-    # get activations for intermediate layers if needed
     inspect_layers = [
         #    'fc6',
         #    'fc7',
     ]
     for layer in inspect_layers:
-        int_model = c3d_model.get_int_model(model=model, layer=layer, backend=backend)
+        int_model = c3d_model.get_int_model(model=model, layer=layer)
         int_output = int_model.predict_on_batch(np.array([X]))
         int_output = int_output[0, ...]
         print("[Debug] at layer={}: output.shape={}".format(layer, int_output.shape))
         diagnose(int_output,
                  verbose=True,
                  label='{} activation'.format(layer),
-                 plots=diagnose_plots,
-                 backend=backend)
+                 plots=diagnose_plots)
 
     output = model.predict_on_batch(np.array([X]))
 
