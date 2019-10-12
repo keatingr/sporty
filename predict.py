@@ -1,10 +1,11 @@
-from keras.models import load_model
+# from keras.models import load_model
 import os
 import cv2
 import numpy as np
 import c3d_model
 import matplotlib.pyplot as plt
 import tensorflow as tf
+from tensorflow import keras
 
 
 def diagnose(data, verbose=True, label='input', plots=False):
@@ -106,11 +107,12 @@ def diagnose(data, verbose=True, label='input', plots=False):
 
 
 def main():
-    show_images = True
-    diagnose_plots = False
+    # show_images = True
+    # diagnose_plots = False
 
-    model = load_model('./models/sports1m-full.h5')
+    model = keras.models.load_model('./models/sports1M_weights_tf.h5')
     model.compile(loss='mean_squared_error', optimizer='sgd')
+    model.save('sports1m-full.h5')
 
     with open('labels.txt', 'r') as f:
         labels = [line.strip() for line in f.readlines()]
@@ -118,11 +120,11 @@ def main():
 
     try:
         cap = cv2.VideoCapture('./videos/tennis.mp4')
+        if not cap:
+            print("No video loaded")
+            exit()
     except:
         print("unable to load video")
-    if not cap:
-        print("No video loaded")
-        exit()
 
     vid = []
     while True:
@@ -154,15 +156,15 @@ def main():
         #    'fc6',
         #    'fc7',
     ]
-    for layer in inspect_layers:
-        int_model = c3d_model.get_int_model(model=model, layer=layer)
-        int_output = int_model.predict_on_batch(np.array([X]))
-        int_output = int_output[0, ...]
-        print("[Debug] at layer={}: output.shape={}".format(layer, int_output.shape))
-        diagnose(int_output,
-                 verbose=True,
-                 label='{} activation'.format(layer),
-                 plots=diagnose_plots)
+    # for layer in inspect_layers:
+    #     int_model = c3d_model.get_int_model(model=model, layer=layer)
+    #     int_output = int_model.predict_on_batch(np.array([X]))
+    #     int_output = int_output[0, ...]
+    #     print("[Debug] at layer={}: output.shape={}".format(layer, int_output.shape))
+    #     diagnose(int_output,
+    #              verbose=True,
+    #              label='{} activation'.format(layer),
+    #              plots=diagnose_plots)
 
     output = model.predict_on_batch(np.array([X]))
 
@@ -171,11 +173,11 @@ def main():
     # plt.plot(output[0])
     # plt.title('Probability')
     # plt.savefig("probabilities.png")
-    print('Position of maximum probability: {}'.format(output[0].argmax()))
+    print('Position of maximum probability: {}'.format(tf.math.argmax(output[0])))
     print('Maximum probability: {:.5f}'.format(max(output[0])))
-    print('Corresponding label: {}'.format(labels[output[0].argmax()]))
+    print('Corresponding label: {}'.format(labels[tf.math.argmax(output[0])]))
 
-    top_inds = output[0].argsort()[::-1][:5]  # reverse sort and take five largest items
+    top_inds = tf.argsort(output[0])[::-1][:5]  # reverse sort and take five largest items
     print('\nTop 5 probabilities and labels:')
     for i in top_inds:
         print('{1}: {0:.5f}'.format(output[0][i], labels[i]))
