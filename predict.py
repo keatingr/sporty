@@ -1,11 +1,13 @@
 # from keras.models import load_model
-import os
-import cv2
-import numpy as np
-import c3d_model
+from sys import getsizeof
+
 import matplotlib.pyplot as plt
+import numpy as np
 import tensorflow as tf
 from tensorflow import keras
+
+from video_util import frame_gen
+from settings import FRAME_BATCH_LEN
 
 
 def diagnose(data, verbose=True, label='input', plots=False):
@@ -107,80 +109,76 @@ def diagnose(data, verbose=True, label='input', plots=False):
 
 
 def main():
-    # show_images = True
-    # diagnose_plots = False
-
-    model = keras.models.load_model('./models/sports1M_weights_tf.h5')
+    model = keras.models.load_model('./models/sports1m-full-compiled.h5')
     model.compile(loss='mean_squared_error', optimizer='sgd')
-    model.save('sports1m-full.h5')
 
     with open('labels.txt', 'r') as f:
         labels = [line.strip() for line in f.readlines()]
     print('Total labels: {}'.format(len(labels)))
 
-    try:
-        cap = cv2.VideoCapture('./videos/tennis.mp4')
-        if not cap:
-            print("No video loaded")
-            exit()
-    except:
-        print("unable to load video")
+    IMG_HEIGHT = 171  # 171
+    IMG_WIDTH = 128  # 128
+    START_FRAME = 1
 
-    vid = []
-    while True:
-        ret, img = cap.read()
-        if not ret:
-            break
-        vid.append(cv2.resize(img, (171, 128)))
-    vid = np.array(vid, dtype=np.float32)
-
-    # plt.imshow(vid[2000]/256)
+    # Older code for single 16 frame batch
+    # vid = frame_gen('./videos/curling.mp4', IMG_WIDTH, IMG_HEIGHT, start_frame=START_FRAME)
+    # print("Video {} frames ~{:,} mbytes in memory".format(vid.shape[0], getsizeof(vid)//1000//1000))
+    #
+    # X = vid[START_FRAME:(START_FRAME + FRAME_BATCH_LEN), :, :, :]  # predict the first batch only
+    # diagnose(X, verbose=True, label='X (16-frame clip)', plots=show_images)
+    # plt.imshow((vid[start_frame]/256)[:, :, ::-1])
     # plt.show()
 
-    start_frame = 100
-    X = vid[start_frame:(start_frame + 16), :, :, :]
-    # diagnose(X, verbose=True, label='X (16-frame clip)', plots=show_images)
+    vidstream = frame_gen('./videos/curling.mp4', IMG_WIDTH, IMG_HEIGHT, start_frame=START_FRAME)
+    for batchseq in vidstream:
+        X = batchseq[0:(0 + FRAME_BATCH_LEN), :, :, :]
 
-    # subtract mean
-    mean_cube = np.load('models/train01_16_128_171_mean.npy')
-    mean_cube = np.transpose(mean_cube, (1, 2, 3, 0))
-    # diagnose(mean_cube, verbose=True, label='Mean cube', plots=show_images)
-    X -= mean_cube
-    # diagnose(X, verbose=True, label='Mean-subtracted X', plots=show_images)
+        subtract_mean = False  # TODO LOW investigate in target dataset if this will help or hurt acc False for now
+        if subtract_mean:
+            mean_cube = np.load('models/train01_16_128_171_mean.npy')
+            mean_cube = np.transpose(mean_cube, (1, 2, 3, 0))
+            # diagnose(mean_cube, verbose=True, label='Mean cube', plots=show_images)
+            X -= mean_cube
+            # diagnose(X, verbose=True, label='Mean-subtracted X', plots=show_images)
 
-    # center crop
-    X = X[:, 8:120, 30:142, :]  # (l, h, w, c)
-    # diagnose(X, verbose=True, label='Center-cropped X', plots=show_images)
+        center_crop = True
+        if center_crop:  # TODO CENTER crop in frame_gen, since the actor can move out of center within the time of FRAME_BATCH_LEN
+            X = X[:, 8:120, 30:142, :]  # (l, h, w, c)
+            # diagnose(X, verbose=True, label='Center-cropped X', plots=show_images)
 
-    inspect_layers = [
-        #    'fc6',
-        #    'fc7',
-    ]
-    # for layer in inspect_layers:
-    #     int_model = c3d_model.get_int_model(model=model, layer=layer)
-    #     int_output = int_model.predict_on_batch(np.array([X]))
-    #     int_output = int_output[0, ...]
-    #     print("[Debug] at layer={}: output.shape={}".format(layer, int_output.shape))
-    #     diagnose(int_output,
-    #              verbose=True,
-    #              label='{} activation'.format(layer),
-    #              plots=diagnose_plots)
+        show_debug_image = False
+        if show_debug_image:
+            plt.imshow((X[0]/256)[:, :, ::-1])
+            plt.show()
+            inspect_layers = [
+                #    'fc6',
+                #    'fc7',
+            ]
+            # for layer in inspect_layers:
+            #     int_model = c3d_model.get_int_model(model=model, layer=layer)
+            #     int_output = int_model.predict_on_batch(np.array([X]))
+            #     int_output = int_output[0, ...]
+            #     print("[Debug] at layer={}: output.shape={}".format(layer, int_output.shape))
+            #     diagnose(int_output,
+            #              verbose=True,
+            #              label='{} activation'.format(layer),
+            #              plots=diagnose_plots)
 
-    output = model.predict_on_batch(np.array([X]))
+        output = model.predict_on_batch(np.array([X]))
 
-    # show results
-    # print('Saving class probabilitities in probabilities.png')
-    # plt.plot(output[0])
-    # plt.title('Probability')
-    # plt.savefig("probabilities.png")
-    print('Position of maximum probability: {}'.format(tf.math.argmax(output[0])))
-    print('Maximum probability: {:.5f}'.format(max(output[0])))
-    print('Corresponding label: {}'.format(labels[tf.math.argmax(output[0])]))
+        # show results
+        # print('Saving class probabilitities in probabilities.png')
+        # plt.plot(output[0])
+        # plt.title('Probability')
+        # plt.savefig("probabilities.png")
+        print('Position of maximum probability: {}'.format(tf.math.argmax(output[0])))
+        print('Maximum probability: {:.5f}'.format(max(output[0])))
+        print('Corresponding label: {}'.format(labels[tf.math.argmax(output[0])]))
 
-    top_inds = tf.argsort(output[0])[::-1][:5]  # reverse sort and take five largest items
-    print('\nTop 5 probabilities and labels:')
-    for i in top_inds:
-        print('{1}: {0:.5f}'.format(output[0][i], labels[i]))
+        top_inds = tf.argsort(output[0])[::-1][:5]  # reverse sort and take five largest items
+        print('\nTop 5 probabilities and labels:')
+        for i in top_inds:
+            print('{1}: {0:.5f}'.format(output[0][i], labels[i]))
 
 
 if __name__ == '__main__':
