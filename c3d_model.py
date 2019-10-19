@@ -30,6 +30,25 @@ def build_model():
     return model
 
 
+"""
+
+ # TODO valid means no padding so research default padding
+TODO investigate
+
+        model.add(Conv3D(
+            32, (3, 3, 3), activation='relu', input_shape=self.input_shape
+        ))
+        model.add(MaxPooling3D(pool_size=(1, 2, 2), strides=(1, 2, 2)))
+        model.add(Conv3D(64, (3, 3, 3), activation='relu'))
+        model.add(MaxPooling3D(pool_size=(1, 2, 2), strides=(1, 2, 2)))
+        model.add(Conv3D(128, (3, 3, 3), activation='relu'))
+        model.add(Conv3D(128, (3, 3, 3), activation='relu'))
+        model.add(MaxPooling3D(pool_size=(1, 2, 2), strides=(1, 2, 2)))
+        model.add(Conv3D(256, (2, 2, 2), activation='relu'))
+        model.add(Conv3D(256, (2, 2, 2), activation='relu'))
+        model.add(MaxPooling3D(pool_size=(1, 2, 2), strides=(1, 2, 2)))
+"""
+
 def build_model_archive():
     """
     Not working but save for reference

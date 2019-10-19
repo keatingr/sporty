@@ -41,13 +41,11 @@ def main():
     IMG_WIDTH = 112
 
     # model = keras.models.load_model('./models/sports1m-full-compiled.h5')
-    model= build_model()
+    model = build_model()
 
     model.compile(loss='mean_squared_error', optimizer='sgd')
+
     model.summary()
-
-
-    # model.summary()
     # with open('labels.txt', 'r') as f:
     #     labels = [line.strip() for line in f.readlines()]
     # print('Total labels: {}'.format(len(labels)))
@@ -62,7 +60,7 @@ def main():
 
     callbacks = []
 
-    history = model.fit_generator(
+    history = model.fit_generator(  # tuple (inputs, targets) or (inputs, targets, sample_weights) https://www.tensorflow.org/api_docs/python/tf/keras/Model
         train_stream_cubes,
         steps_per_epoch=100,
         validation_data=val_stream_cubes,
@@ -70,6 +68,7 @@ def main():
         epochs=1,
         callbacks=callbacks
     )
+    model.save('test.h5')
 
 
 if __name__ == '__main__':
