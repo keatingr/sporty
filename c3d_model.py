@@ -6,6 +6,39 @@ def build_model():
     input_shape = (16, 112, 112, 3)  # l, h, w, c
 
     model = keras.models.Sequential([
+        keras.layers.Convolution3D(64, 3, activation='relu', padding='same', name='conv1', input_shape=input_shape),
+        keras.layers.MaxPooling3D(pool_size=(1, 2, 2), strides=(1, 2, 2), padding='valid', name='pool1'),
+        keras.layers.Convolution3D(128, 3, activation='relu', padding='same', name='conv2'),
+        keras.layers.MaxPooling3D(pool_size=(2, 2, 2), strides=(2, 2, 2), padding='valid', name='pool2'),
+        keras.layers.Convolution3D(256, 3, activation='relu', padding='same', name='conv3a'),
+        keras.layers.Convolution3D(256, 3, activation='relu', padding='same', name='conv3b'),
+        keras.layers.MaxPooling3D(pool_size=(2, 2, 2), strides=(2, 2, 2), padding='valid', name='pool3'),
+        keras.layers.Convolution3D(512, 3, activation='relu', padding='same', name='conv4a'),
+        keras.layers.Convolution3D(512, 3, activation='relu', padding='same', name='conv4b'),
+        keras.layers.MaxPooling3D(pool_size=(2, 2, 2), strides=(2, 2, 2), padding='valid', name='pool4'),
+        keras.layers.Convolution3D(512, 3, activation='relu', padding='same', name='conv5a'),
+        keras.layers.Convolution3D(512, 3, activation='relu', padding='same', name='conv5b'),
+        keras.layers.ZeroPadding3D(padding=((0, 0), (0, 1), (0, 1)), name='zeropad5'),
+        keras.layers.MaxPooling3D(pool_size=(2, 2, 2), strides=(2, 2, 2), padding='valid', name='pool5'),
+        keras.layers.Flatten(),
+        keras.layers.Dense(4096, activation='relu', name='fc6'),
+        keras.layers.Dropout(.5),
+        keras.layers.Dense(4096, activation='relu', name='fc7'),
+        keras.layers.Dropout(.5),
+        keras.layers.Dense(487, activation='softmax', name='fc8')
+    ])
+    return model
+
+
+def build_model_archive():
+    """
+    Not working but save for reference
+    :return:
+    """
+    input_shape = (16, 112, 112, 3)  # l, h, w, c
+    # TODO verify in 64, 3,3,3 wow what is the final/third 3?
+
+    model = keras.models.Sequential([
         keras.layers.Convolution3D(64, 3, 3, 3, activation='relu', border_mode='same', name='conv1', input_shape=input_shape),
         keras.layers.MaxPooling3D(pool_size =(1, 2, 2), strides=(1, 2, 2), border_mode='valid', name='pool1'),
         keras.layers.Convolution3D(128, 3, 3, 3, activation='relu', border_mode='same', name='conv2'),

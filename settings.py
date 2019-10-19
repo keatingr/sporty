@@ -1,1 +1,1 @@
-FRAME_BATCH_LEN = 16  # number of frames to batch together for the video sequence; the third dimension for the cube
+FRAME_BATCH_LEN = 16  # number of frames to batch together for the video sequence; the third dimension for the cube; sports1m C3D trained shape (16, 112, 112, 3) so won't change until architecture changes

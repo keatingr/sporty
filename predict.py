@@ -1,13 +1,10 @@
-# from keras.models import load_model
-from sys import getsizeof
-
 import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 
-from video_util import frame_gen
 from settings import FRAME_BATCH_LEN
+from video_util import frame_gen
 
 
 def diagnose(data, verbose=True, label='input', plots=False):
@@ -109,16 +106,17 @@ def diagnose(data, verbose=True, label='input', plots=False):
 
 
 def main():
+    IMG_HEIGHT = 171  # 171
+    IMG_WIDTH = 128  # 128
+    START_FRAME = 1
+    video_file = './videos/curling.mp4'
+
     model = keras.models.load_model('./models/sports1m-full-compiled.h5')
     model.compile(loss='mean_squared_error', optimizer='sgd')
 
     with open('labels.txt', 'r') as f:
         labels = [line.strip() for line in f.readlines()]
     print('Total labels: {}'.format(len(labels)))
-
-    IMG_HEIGHT = 171  # 171
-    IMG_WIDTH = 128  # 128
-    START_FRAME = 1
 
     # Older code for single 16 frame batch
     # vid = frame_gen('./videos/curling.mp4', IMG_WIDTH, IMG_HEIGHT, start_frame=START_FRAME)
@@ -129,7 +127,7 @@ def main():
     # plt.imshow((vid[start_frame]/256)[:, :, ::-1])
     # plt.show()
 
-    vidstream = frame_gen('./videos/curling.mp4', IMG_WIDTH, IMG_HEIGHT, start_frame=START_FRAME)
+    vidstream = frame_gen(video_file, img_width=IMG_WIDTH, img_height=IMG_HEIGHT, start_frame=START_FRAME)
     for batchseq in vidstream:
         X = batchseq[0:(0 + FRAME_BATCH_LEN), :, :, :]
 

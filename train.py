@@ -1,6 +1,6 @@
 from tensorflow import keras
-
-from video_util import frame_gen
+from c3d_model import build_model
+from video_util import train_frame_gen
 from settings import FRAME_BATCH_LEN
 
 
@@ -37,36 +37,39 @@ def freeze_all_but_mid_and_top(model):
 
 
 def main():
-    callbacks = []
-    model = keras.models.load_model('./models/sports1m-full-compiled.h5')
+    IMG_HEIGHT = 112
+    IMG_WIDTH = 112
+
+    # model = keras.models.load_model('./models/sports1m-full-compiled.h5')
+    model= build_model()
+
     model.compile(loss='mean_squared_error', optimizer='sgd')
+    model.summary()
 
-    # train_generator = train_datagen.flow_from_directory(
-    #     os.path.join('data', 'train'),
-    #     target_size=(299, 299),
-    #     batch_size=32,
-    #     classes=data.classes,
-    #     class_mode='categorical')
-    #
-    # model.fit_generator(
-    #     train_generator,
-    #     steps_per_epoch=100,
-    #     validation_data=validation_generator,
-    #     validation_steps=10,
-    #     epochs=nb_epoch,
-    #     callbacks=callbacks
-    # )
 
+    # model.summary()
     # with open('labels.txt', 'r') as f:
     #     labels = [line.strip() for line in f.readlines()]
     # print('Total labels: {}'.format(len(labels)))
 
-    IMG_HEIGHT = 171
-    IMG_WIDTH = 128
+    # TODO center crop within the frame gen prob see also predict code
+    train_stream_cubes = train_frame_gen('./videos/curling.mp4', img_width=IMG_WIDTH, img_height=IMG_HEIGHT)
+    val_stream_cubes = train_frame_gen('./videos/curling.mp4', img_width=IMG_WIDTH, img_height=IMG_HEIGHT)
 
-    vidstream = frame_gen('./videos/curling.mp4', IMG_WIDTH, IMG_HEIGHT)
-    for batchseq in vidstream:
-        X = vid[0:(0 + FRAME_BATCH_LEN), :, :, :]
+    # TODO batch into 8/16/32
+    # for batchseq in vidstream:
+    #     X = vid[0:(0 + FRAME_BATCH_LEN), :, :, :]
+
+    callbacks = []
+
+    history = model.fit_generator(
+        train_stream_cubes,
+        steps_per_epoch=100,
+        validation_data=val_stream_cubes,
+        validation_steps=15,
+        epochs=1,
+        callbacks=callbacks
+    )
 
 
 if __name__ == '__main__':
