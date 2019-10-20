@@ -109,7 +109,7 @@ def main():
     IMG_HEIGHT = 171  # 171
     IMG_WIDTH = 128  # 128
     START_FRAME = 1
-    video_file = './videos/curling.mp4'
+    video_file = './videos/baseball.mp4'
 
     model = keras.models.load_model('./models/sports1m-full-compiled.h5')
     model.compile(loss='mean_squared_error', optimizer='sgd')
@@ -128,7 +128,7 @@ def main():
     # plt.show()
 
     vidstream = frame_gen(video_file, img_width=IMG_WIDTH, img_height=IMG_HEIGHT, start_frame=START_FRAME)
-    for batchseq in vidstream:
+    for k, batchseq in enumerate(vidstream):
         X = batchseq[0:(0 + FRAME_BATCH_LEN), :, :, :]
 
         subtract_mean = False  # TODO LOW investigate in target dataset if this will help or hurt acc False for now
@@ -174,7 +174,7 @@ def main():
         print('Corresponding label: {}'.format(labels[tf.math.argmax(output[0])]))
 
         top_inds = tf.argsort(output[0])[::-1][:5]  # reverse sort and take five largest items
-        print('\nTop 5 probabilities and labels:')
+        print('\n{} - Top 5 probabilities and labels:'.format(k))  # TODO show frame not iter/k
         for i in top_inds:
             print('{1}: {0:.5f}'.format(output[0][i], labels[i]))
 
