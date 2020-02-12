@@ -51,8 +51,8 @@ def main():
     # print('Total labels: {}'.format(len(labels)))
 
     # TODO center crop within the frame gen prob see also predict code
-    train_stream_cubes = train_frame_gen('./videos/curling.mp4', img_width=IMG_WIDTH, img_height=IMG_HEIGHT)
-    val_stream_cubes = train_frame_gen('./videos/curling.mp4', img_width=IMG_WIDTH, img_height=IMG_HEIGHT)
+    train_stream_cubes = train_frame_gen('./videos/nyc_driving.mp4', img_width=IMG_WIDTH, img_height=IMG_HEIGHT)
+    val_stream_cubes = train_frame_gen('./videos/nyc_driving.mp4', img_width=IMG_WIDTH, img_height=IMG_HEIGHT)
 
     # TODO batch into 8/16/32
     # for batchseq in vidstream:

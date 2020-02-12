@@ -1,10 +1,11 @@
+import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
-from tensorflow import keras
-
+from time import sleep
 from settings import FRAME_BATCH_LEN
 from video_util import frame_gen
+import copy
 
 
 def diagnose(data, verbose=True, label='input', plots=False):
@@ -111,7 +112,7 @@ def main():
     START_FRAME = 1
     video_file = './videos/curling.mp4'
 
-    model = keras.models.load_model('./models/sports1m-full-compiled.h5')
+    model = tf.keras.models.load_model('./models/sports1m-full-compiled.h5')
     model.compile(loss='mean_squared_error', optimizer='sgd')
 
     with open('labels.txt', 'r') as f:
@@ -129,8 +130,10 @@ def main():
 
     vidstream = frame_gen(video_file, img_width=IMG_WIDTH, img_height=IMG_HEIGHT, start_frame=START_FRAME)
     for k, batchseq in enumerate(vidstream):
-        X = batchseq[0:(0 + FRAME_BATCH_LEN), :, :, :]
 
+        raw_frame = batchseq[0:(0 + FRAME_BATCH_LEN), :, :, :]
+        raw_frame = copy.deepcopy(raw_frame)  # TODO is this actually necessary to prevent writing to the video file
+        X = copy.deepcopy(raw_frame)
         subtract_mean = False  # TODO LOW investigate in target dataset if this will help or hurt acc False for now
         if subtract_mean:
             mean_cube = np.load('models/train01_16_128_171_mean.npy')
@@ -141,43 +144,38 @@ def main():
 
         center_crop = True
         if center_crop:  # TODO CENTER crop in frame_gen, since the actor can move out of center within the time of FRAME_BATCH_LEN
-            X = X[:, 8:120, 30:142, :]  # (l, h, w, c)
+            predict_input = X[:, 8:120, 30:142, :]  # (l, h, w, c)
             # diagnose(X, verbose=True, label='Center-cropped X', plots=show_images)
 
         show_debug_image = True
         if show_debug_image:
-            plt.imshow((X[0]/256)[:, :, ::-1])
-            plt.show()
-            inspect_layers = [
-                #    'fc6',
-                #    'fc7',
-            ]
-            # for layer in inspect_layers:
-            #     int_model = c3d_model.get_int_model(model=model, layer=layer)
-            #     int_output = int_model.predict_on_batch(np.array([X]))
-            #     int_output = int_output[0, ...]
-            #     print("[Debug] at layer={}: output.shape={}".format(layer, int_output.shape))
-            #     diagnose(int_output,
-            #              verbose=True,
-            #              label='{} activation'.format(layer),
-            #              plots=diagnose_plots)
+            # raw_frame = cv2.resize(X, (256, 256), interpolation=cv2.INTER_AREA)
+            output = model.predict_on_batch(np.array([predict_input]))  # why not /256 TODO major test dividing by 256
+            p_label = '{:.5f} - {}'.format(max(output[0]), labels[int(np.argmax(output[0]))])
 
-        output = model.predict_on_batch(np.array([X]))
+            img = raw_frame[0]/256  #[:, :, ::-1])  # convert back to BGR for cv2
 
-        # show results
-        # print('Saving class probabilitities in probabilities.png')
-        # plt.plot(output[0])
-        # plt.title('Probability')
-        # plt.savefig("probabilities.png")
-        position = int(np.argmax(output[0]))
-        print('Position of maximum probability: {}'.format(position))
-        print('Maximum probability: {:.5f}'.format(max(output[0])))
-        print('Corresponding label: {}'.format(labels[position]))
+            cv2.putText(img, p_label, (10, 20), cv2.FONT_HERSHEY_DUPLEX, 0.4, (0, 75, 0), 1)
+            cv2.imshow('', img)
+            sleep(.25)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
 
-        top_inds = np.argsort(output[0])[::-1][:5]  # reverse sort and take five largest items
-        print('\n{} - Top 5 probabilities and labels:'.format(k))  # TODO show frame not iter/k
-        for i in top_inds:
-            print('{1}: {0:.5f}'.format(output[0][i], labels[i]))
+        # output = model.predict_on_batch(np.array([predict_input]))  # why not /256 TODO major test dividing by 256
+        #
+        # # show results
+        # # print('Saving class probabilitities in probabilities.png')
+        # # plt.plot(output[0])
+        # # plt.title('Probability')
+        # # plt.savefig("probabilities.png")
+        # print('Position of maximum probability: {}'.format(tf.math.argmax(output[0])))
+        # print('Maximum probability: {:.5f}'.format(max(output[0])))
+        # print('Corresponding label: {}'.format(labels[tf.math.argmax(output[0])]))
+        #
+        # top_inds = tf.argsort(output[0])[::-1][:5]  # reverse sort and take five largest items
+        # print('\n{} - Top 5 probabilities and labels:'.format(k))  # TODO show frame not iter/k
+        # for i in top_inds:
+        #     print('{1}: {0:.5f}'.format(output[0][i], labels[i]))
 
 
 if __name__ == '__main__':

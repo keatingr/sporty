@@ -1,3 +1,4 @@
-tensorflow
+tensorflow==1.15
 matplotlib
-opencv-python
+opencv-python==4.1.2.30
+# opencv-python4.2 has a problem with Qt libraries on mac

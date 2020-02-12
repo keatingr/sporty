@@ -17,7 +17,7 @@ def build_model():
         keras.layers.Convolution3D(512, (3,3,3), activation='relu', padding='same', name='conv4b'),
         keras.layers.MaxPooling3D(pool_size=(2, 2, 2), strides=(2, 2, 2), padding='valid', name='pool4'),
         keras.layers.Convolution3D(512, (3,3,3), activation='relu', padding='same', name='conv5a'),
-        keras.layers.Convolution3D(512, (3,3,3), activation='relu', padding='same', name='conv5b'),
+        keras.layers.Convolution3D(512, (3,3,3), activation='relu', padding='same', name='conv5b'),  # TODO will accept 0, 2 or 3 or 4 or 5 or 150[pad?] these are dimensions dimensionality increases here have a computational penalty by a factor
         keras.layers.ZeroPadding3D(padding=((0, 0), (0, 1), (0, 1)), name='zeropad5'),
         keras.layers.MaxPooling3D(pool_size=(2, 2, 2), strides=(2, 2, 2), padding='valid', name='pool5'),
         keras.layers.Flatten(),
