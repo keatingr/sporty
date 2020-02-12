@@ -6,6 +6,7 @@ from time import sleep
 from settings import FRAME_BATCH_LEN
 from video_util import frame_gen
 import copy
+from c3d_model import build_model
 
 
 def diagnose(data, verbose=True, label='input', plots=False):
@@ -112,7 +113,9 @@ def main():
     START_FRAME = 1
     video_file = './videos/curling.mp4'
 
-    model = tf.keras.models.load_model('./models/sports1m-full-compiled.h5')
+    # model = tf.keras.models.load_model('./models/sports1m-full-uncompiled-keras-tf-1.15.h5')
+    model = tf.keras.models.load_model('sports1m-keras-tf2.h5')
+
     model.compile(loss='mean_squared_error', optimizer='sgd')
 
     with open('labels.txt', 'r') as f:

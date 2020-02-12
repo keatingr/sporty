@@ -40,7 +40,7 @@ def main():
     IMG_HEIGHT = 112
     IMG_WIDTH = 112
 
-    # model = keras.models.load_model('./models/sports1m-full-compiled.h5')
+    # model = keras.models.load_model('./models/sports1m-keras-tf2.h5')
     model = build_model()
 
     model.compile(loss='mean_squared_error', optimizer='sgd')
