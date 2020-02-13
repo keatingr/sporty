@@ -111,10 +111,10 @@ def main():
     IMG_HEIGHT = 171  # 171
     IMG_WIDTH = 128  # 128
     START_FRAME = 1
-    video_file = './videos/curling.mp4'
+    video_file = './videos/basketball.mp4'
 
     # model = tf.keras.models.load_model('./models/sports1m-full-uncompiled-keras-tf-1.15.h5')
-    model = tf.keras.models.load_model('sports1m-keras-tf2.h5')
+    model = tf.keras.models.load_model('./models/sports1m-keras-tf2.h5')
 
     model.compile(loss='mean_squared_error', optimizer='sgd')
 
