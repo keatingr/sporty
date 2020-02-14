@@ -113,7 +113,6 @@ def main():
     START_FRAME = 1
     video_file = './videos/basketball.mp4'
 
-    # model = tf.keras.models.load_model('./models/sports1m-full-uncompiled-keras-tf-1.15.h5')
     model = tf.keras.models.load_model('./models/sports1m-keras-tf2.h5')
 
     model.compile(loss='mean_squared_error', optimizer='sgd')
@@ -122,43 +121,20 @@ def main():
         labels = [line.strip() for line in f.readlines()]
     print('Total labels: {}'.format(len(labels)))
 
-    # Older code for single 16 frame batch
-    # vid = frame_gen('./videos/curling.mp4', IMG_WIDTH, IMG_HEIGHT, start_frame=START_FRAME)
-    # print("Video {} frames ~{:,} mbytes in memory".format(vid.shape[0], getsizeof(vid)//1000//1000))
-    #
-    # X = vid[START_FRAME:(START_FRAME + FRAME_BATCH_LEN), :, :, :]  # predict the first batch only
-    # diagnose(X, verbose=True, label='X (16-frame clip)', plots=show_images)
-    # plt.imshow((vid[start_frame]/256)[:, :, ::-1])
-    # plt.show()
-
     vidstream = frame_gen(video_file, img_width=IMG_WIDTH, img_height=IMG_HEIGHT, start_frame=START_FRAME)
+
     mean_cube = np.load('models/train01_16_128_171_mean.npy')
     mean_cube = np.transpose(mean_cube, (1, 2, 3, 0))
 
     for batchseq in vidstream:
-
-        # raw_frame = batchseq[0:(0 + FRAME_BATCH_LEN), :, :, :]  # TODO major doesn't look like this was doing anything, investigate
-        # raw_frame = copy.deepcopy(batchseq)  # TODO is this actually necessary to prevent writing to the video file
-        # X = copy.deepcopy(batchseq)
         X = batchseq
-        subtract_mean = False  # TODO LOW investigate in target dataset if this will help or hurt acc False for now
-        if subtract_mean:
-            # diagnose(mean_cube, verbose=True, label='Mean cube', plots=show_images)
-            X -= mean_cube
-            # diagnose(X, verbose=True, label='Mean-subtracted X', plots=show_images)
+        X -= mean_cube
+        X = X[:, 8:120, 30:142, :]  # (l, h, w, c)
 
-        center_crop = True
-        if center_crop:  # TODO CENTER crop in frame_gen, since the actor can move out of center within the time of FRAME_BATCH_LEN
-            X = X[:, 8:120, 30:142, :]  # (l, h, w, c)
-            # diagnose(X, verbose=True, label='Center-cropped X', plots=show_images)
-
-        # raw_frame = cv2.resize(X, (256, 256), interpolation=cv2.INTER_AREA)
         output = model.predict(np.array([X]))  # TODO difference from predict_on_batch?
         for idx in batchseq:
             p_label = '{:.5f} - {}'.format(max(output[0]), labels[int(np.argmax(output[0]))])
-
             img = idx/256
-
             cv2.putText(img, p_label, (10, 20), cv2.FONT_HERSHEY_DUPLEX, 0.4, (0, 75, 0), 1)
             cv2.imshow('', img)
             sleep(.05)

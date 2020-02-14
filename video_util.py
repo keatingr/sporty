@@ -3,6 +3,7 @@ import numpy as np
 from settings import FRAME_BATCH_LEN
 import tensorflow as tf
 
+
 def frame_gen(filename, img_width=0, img_height=0, start_frame=0):
     """
     Image generator for video frames. Treats all videos as just bags of FRAME_BATCH_LEN,
@@ -30,6 +31,7 @@ def frame_gen(filename, img_width=0, img_height=0, start_frame=0):
 
     except:
         print("Problem reading from video {}".format(filename))
+
 
 def get_class_one_hot(self, class_str):
     """Given a class as a string, return its number in the classes
