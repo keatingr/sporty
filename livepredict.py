@@ -111,7 +111,7 @@ def main():
     IMG_HEIGHT = 171  # 171
     IMG_WIDTH = 128  # 128
     START_FRAME = 1
-    video_file = './videos/basketball.mp4'
+    video_file = './videos/disc_golf.mp4'
 
     model = tf.keras.models.load_model('./models/sports1m-keras-tf2.h5')
 
@@ -121,25 +121,44 @@ def main():
         labels = [line.strip() for line in f.readlines()]
     print('Total labels: {}'.format(len(labels)))
 
-    vidstream = frame_gen(video_file, img_width=IMG_WIDTH, img_height=IMG_HEIGHT, start_frame=START_FRAME)
-
     mean_cube = np.load('models/train01_16_128_171_mean.npy')
     mean_cube = np.transpose(mean_cube, (1, 2, 3, 0))
 
-    for batchseq in vidstream:
-        X = batchseq
-        X -= mean_cube
-        X = X[:, 8:120, 30:142, :]  # (l, h, w, c)
-
-        output = model.predict(np.array([X]))  # TODO difference from predict_on_batch?
-        for idx in batchseq:
-            p_label = '{:.5f} - {}'.format(max(output[0]), labels[int(np.argmax(output[0]))])
-            img = idx/256
+    cap = cv2.VideoCapture(video_file)
+    if not cap:
+        print("No video loaded {}".format(video_file))
+        exit()
+    vid = []
+    while True:
+        ret, img = cap.read()
+        if not ret:  # end of stream
+            break
+        img = np.array(img, dtype=np.float32)
+        vid.append(cv2.resize(img, (IMG_HEIGHT, IMG_WIDTH)))
+        if len(vid) == FRAME_BATCH_LEN:
+            X = vid
+            X -= mean_cube  # TODO mean avg is very important!
+            X = X[:, 8:120, 30:142, :]  # (l, h, w, c)  # TODO center crop is very important! try without it!
+            p = model.predict(np.array([X]))  # TODO can just use X?
+            p_label = '{:.5f} - {}'.format(max(p[0]), labels[int(np.argmax(p[0]))])
+            img = img / 255
             cv2.putText(img, p_label, (10, 20), cv2.FONT_HERSHEY_DUPLEX, 0.4, (0, 75, 0), 1)
-            cv2.imshow('', img)
-            sleep(.05)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
+            vid.pop(0)
+        cv2.imshow('Sporty', img)
+        cv2.moveWindow('Sporty', 300, 150)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+    #
+    #     output = model.predict(np.array([X]))  # TODO difference from predict_on_batch?
+    #     for idx in batchseq:
+    #         p_label = '{:.5f} - {}'.format(max(output[0]), labels[int(np.argmax(output[0]))])
+    #         img = idx/256
+    #         cv2.putText(img, p_label, (10, 20), cv2.FONT_HERSHEY_DUPLEX, 0.4, (0, 75, 0), 1)
+    #         cv2.imshow('', img)
+    #         sleep(.05)
+    #         if cv2.waitKey(1) & 0xFF == ord('q'):
+    #             break
 
         # output = model.predict_on_batch(np.array([predict_input]))  # why not /256 TODO major test dividing by 256
         #
