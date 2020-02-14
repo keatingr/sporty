@@ -111,7 +111,7 @@ def main():
     IMG_HEIGHT = 171  # 171
     IMG_WIDTH = 128  # 128
     START_FRAME = 1
-    video_file = './videos/disc_golf.mp4'
+    video_file = VIDEO_FILE
 
     model = tf.keras.models.load_model('./models/sports1m-keras-tf2.h5')
 
@@ -135,15 +135,21 @@ def main():
             break
         img = np.array(img, dtype=np.float32)
         vid.append(cv2.resize(img, (IMG_HEIGHT, IMG_WIDTH)))
+        X = vid
+        p_label = ''
         if len(vid) == FRAME_BATCH_LEN:
-            X = vid
             X -= mean_cube  # TODO mean avg is very important!
             X = X[:, 8:120, 30:142, :]  # (l, h, w, c)  # TODO center crop is very important! try without it!
             p = model.predict(np.array([X]))  # TODO can just use X?
-            p_label = '{:.5f} - {}'.format(max(p[0]), labels[int(np.argmax(p[0]))])
-            img = img / 255
-            cv2.putText(img, p_label, (10, 20), cv2.FONT_HERSHEY_DUPLEX, 0.4, (0, 75, 0), 1)
+            confidence = max(p[0])
+            if confidence > 0.2:  # re-label only if thresh
+                p_label = '{:.5f} - {}'.format(max(p[0]), labels[int(np.argmax(p[0]))])
             vid.pop(0)
+
+        img = img / 255
+        if p_label:
+            cv2.putText(img, p_label, (11, 21), cv2.FONT_HERSHEY_DUPLEX, 0.7, (0, 0, 0), 1)
+            cv2.putText(img, p_label, (10, 20), cv2.FONT_HERSHEY_DUPLEX, 0.7, (0, 100, 0), 1)
         cv2.imshow('Sporty', img)
         cv2.moveWindow('Sporty', 300, 150)
         if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -178,4 +184,5 @@ def main():
 
 
 if __name__ == '__main__':
+    VIDEO_FILE = './videos/tennis.mp4'
     main()
