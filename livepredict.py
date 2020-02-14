@@ -132,35 +132,36 @@ def main():
     # plt.show()
 
     vidstream = frame_gen(video_file, img_width=IMG_WIDTH, img_height=IMG_HEIGHT, start_frame=START_FRAME)
-    for k, batchseq in enumerate(vidstream):
+    mean_cube = np.load('models/train01_16_128_171_mean.npy')
+    mean_cube = np.transpose(mean_cube, (1, 2, 3, 0))
 
-        raw_frame = batchseq[0:(0 + FRAME_BATCH_LEN), :, :, :]
-        raw_frame = copy.deepcopy(raw_frame)  # TODO is this actually necessary to prevent writing to the video file
-        X = copy.deepcopy(raw_frame)
+    for batchseq in vidstream:
+
+        # raw_frame = batchseq[0:(0 + FRAME_BATCH_LEN), :, :, :]  # TODO major doesn't look like this was doing anything, investigate
+        # raw_frame = copy.deepcopy(batchseq)  # TODO is this actually necessary to prevent writing to the video file
+        # X = copy.deepcopy(batchseq)
+        X = batchseq
         subtract_mean = False  # TODO LOW investigate in target dataset if this will help or hurt acc False for now
         if subtract_mean:
-            mean_cube = np.load('models/train01_16_128_171_mean.npy')
-            mean_cube = np.transpose(mean_cube, (1, 2, 3, 0))
             # diagnose(mean_cube, verbose=True, label='Mean cube', plots=show_images)
             X -= mean_cube
             # diagnose(X, verbose=True, label='Mean-subtracted X', plots=show_images)
 
         center_crop = True
         if center_crop:  # TODO CENTER crop in frame_gen, since the actor can move out of center within the time of FRAME_BATCH_LEN
-            predict_input = X[:, 8:120, 30:142, :]  # (l, h, w, c)
+            X = X[:, 8:120, 30:142, :]  # (l, h, w, c)
             # diagnose(X, verbose=True, label='Center-cropped X', plots=show_images)
 
-        show_debug_image = True
-        if show_debug_image:
-            # raw_frame = cv2.resize(X, (256, 256), interpolation=cv2.INTER_AREA)
-            output = model.predict_on_batch(np.array([predict_input]))  # why not /256 TODO major test dividing by 256
+        # raw_frame = cv2.resize(X, (256, 256), interpolation=cv2.INTER_AREA)
+        output = model.predict(np.array([X]))  # TODO difference from predict_on_batch?
+        for idx in batchseq:
             p_label = '{:.5f} - {}'.format(max(output[0]), labels[int(np.argmax(output[0]))])
 
-            img = raw_frame[0]/256  #[:, :, ::-1])  # convert back to BGR for cv2
+            img = idx/256
 
             cv2.putText(img, p_label, (10, 20), cv2.FONT_HERSHEY_DUPLEX, 0.4, (0, 75, 0), 1)
             cv2.imshow('', img)
-            sleep(.25)
+            sleep(.05)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
 
